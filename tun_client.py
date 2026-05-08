@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 import fcntl, struct, os, socket
 from scapy.all import *
@@ -21,6 +20,7 @@ os.system("ip addr add 192.168.53.99/24 dev {}".format(ifname))
 os.system("ip link set dev {} up".format(ifname))
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(("0.0.0.0", 9090))
 
 while True:
     ready, _, _ = select([sock, tun], [], [])
