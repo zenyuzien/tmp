@@ -2,6 +2,7 @@
 #!/usr/bin/python3
 import fcntl, struct, os, socket
 from scapy.all import *
+from select import select
 
 TUNSETIFF = 0x400454ca
 IFF_TUN   = 0x0001
@@ -22,7 +23,15 @@ os.system("ip link set dev {} up".format(ifname))
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 while True:
-    packet = os.read(tun, 2048)
-    pkt = IP(packet)
-    print("Sending: {} --> {}".format(pkt.src, pkt.dst))
-    sock.sendto(packet, (SERVER_IP, SERVER_PORT))
+    ready, _, _ = select([sock, tun], [], [])
+    for fd in ready:
+        if fd is tun:
+            data = os.read(tun, 2048)
+            pkt = IP(data)
+            print("From tun: {} --> {}".format(pkt.src, pkt.dst))
+            sock.sendto(data, (SERVER_IP, SERVER_PORT))
+        if fd is sock:
+            data, addr = sock.recvfrom(2048)
+            pkt = IP(data)
+            print("From socket: {} --> {}".format(pkt.src, pkt.dst))
+            os.write(tun, data)
